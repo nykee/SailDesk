@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "saildesk",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  // Bing data is served from a KV cache instead of calling Bing on every request.
+  // Create your own namespace with `wrangler kv namespace create BING_CACHE`
+  // and paste the returned id here. With the placeholder id below, the Bing
+  // section stays disabled and the rest of the dashboard works normally.
+  "kv_namespaces": [
+    {
+      "binding": "BING_CACHE",
+      "id": "00000000000000000000000000000000"
+    }
+  ]
+}

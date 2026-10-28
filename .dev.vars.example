@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local development. Do not commit .dev.vars.
+# Use a Google OAuth Desktop client; `pnpm gsc:authorize` creates the refresh token.
+GOOGLE_OAUTH_CLIENT_ID=your-desktop-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=your-desktop-client-secret
+GSC_REFRESH_TOKEN=
+DASHBOARD_PASSWORD=
+# Generate with: openssl rand -base64 32
+DASHBOARD_SESSION_SECRET=
+# Optional. Bing Webmaster Tools -> Settings -> API access.
+# Leave empty to hide the Bing section.
+BING_API_KEY=
