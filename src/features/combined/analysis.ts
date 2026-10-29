@@ -3,24 +3,28 @@ import type {
   BingPerformance,
 } from '@/features/bing/types';
 import type { Ga4OverviewReport, Ga4Performance } from '@/features/ga4/types';
-import { type SiteHealth, siteHealth } from '@/features/gsc/health';
+import { siteHealth } from '@/features/gsc/health';
+import type { OverviewReport, SearchPerformance } from '@/features/gsc/types';
 import type {
-  OverviewReport,
-  SearchMetrics,
-  SearchPerformance,
-} from '@/features/gsc/types';
+  UmamiOverviewReport,
+  UmamiPerformance,
+} from '@/features/umami/types';
 
 /**
- * The three dashboards share the same GSC `siteUrl` as their join key, so a
- * combined portfolio view is a pure client-side merge of data that is already
- * fetched for the overview. No extra Worker subrequests are needed, which keeps
- * the whole view inside Cloudflare's per-invocation budget.
+ * The dashboards share the same GSC `siteUrl` as their join key, so a combined
+ * portfolio view is a pure client-side merge of data that is already fetched
+ * for the overview. No extra Worker subrequests are needed, which keeps the
+ * whole view inside Cloudflare's per-invocation budget.
+ *
+ * Umami is optional: a deployment without an API key still renders the other
+ * three sources instead of losing the whole rollup.
  */
 export type CombinedSite = {
   siteUrl: string;
   gsc?: SearchPerformance;
   ga4?: Ga4Performance;
   bing?: BingPerformance;
+  umami?: UmamiPerformance;
 };
 
 export type InsightSeverity = 'high' | 'medium' | 'info' | 'positive';
@@ -55,24 +59,34 @@ export type CombinedSummary = {
   siteCount: number;
   ga4Covered: number;
   bingCovered: number;
+  /** `null` means Umami is not configured for this deployment. */
+  umamiPageviews: number | null;
+  umamiPageviewsPrevious: number | null;
+  umamiCovered: number;
 };
 
-/** Joins the three per-site arrays on the shared GSC `siteUrl`. */
+/** Joins the per-site arrays on the shared GSC `siteUrl`. */
 export function joinSites(
   gsc: OverviewReport,
   ga4: Ga4OverviewReport,
-  bing: BingOverviewReport
+  bing: BingOverviewReport,
+  umami?: UmamiOverviewReport
 ): CombinedSite[] {
   const ga4BySite = new Map(ga4.sites.map((site) => [site.siteUrl, site]));
   const bingBySite = new Map(bing.sites.map((site) => [site.siteUrl, site]));
+  const umamiBySite = new Map(
+    (umami?.sites ?? []).map((site) => [site.siteUrl, site])
+  );
   return gsc.sites.map((gscSite) => {
     const ga4Site = ga4BySite.get(gscSite.property.siteUrl);
     const bingSite = bingBySite.get(gscSite.property.siteUrl);
+    const umamiSite = umamiBySite.get(gscSite.property.siteUrl);
     return {
       siteUrl: gscSite.property.siteUrl,
       gsc: gscSite.status === 'ready' ? gscSite.performance : undefined,
       ga4: ga4Site?.status === 'ready' ? ga4Site.performance : undefined,
       bing: bingSite?.status === 'ready' ? bingSite.performance : undefined,
+      umami: umamiSite?.status === 'ready' ? umamiSite.performance : undefined,
     };
   });
 }
@@ -82,11 +96,13 @@ export function buildSummary(
   gsc: OverviewReport,
   ga4: Ga4OverviewReport,
   bing: BingOverviewReport,
-  sites: CombinedSite[]
+  sites: CombinedSite[],
+  umami?: UmamiOverviewReport
 ): CombinedSummary {
   const gscTotals = gsc.totals;
   const ga4Totals = ga4.totals;
   const bingTotals = bing.totals;
+  const umamiTotals = umami?.totals;
   const gscClicks = gscTotals?.metrics.clicks ?? 0;
   const ga4Sessions = ga4Totals?.metrics.sessions ?? 0;
   const bingClicks = bingTotals?.metrics.clicks ?? 0;
@@ -135,6 +151,11 @@ export function buildSummary(
     siteCount: sites.length,
     ga4Covered: sites.filter((site) => site.ga4).length,
     bingCovered: sites.filter((site) => site.bing).length,
+    umamiPageviews: umamiTotals ? umamiTotals.metrics.pageviews : null,
+    umamiPageviewsPrevious: umamiTotals
+      ? umamiTotals.previousMetrics.pageviews
+      : null,
+    umamiCovered: sites.filter((site) => site.umami).length,
   };
 }
 
@@ -143,7 +164,8 @@ export function buildInsights(
   gsc: OverviewReport,
   ga4: Ga4OverviewReport,
   bing: BingOverviewReport,
-  sites: CombinedSite[]
+  sites: CombinedSite[],
+  umami?: UmamiOverviewReport
 ): CombinedInsight[] {
   const insights: CombinedInsight[] = [];
 
@@ -271,6 +293,29 @@ export function buildInsights(
         '搜索流量与落地页留存同时向上，说明内容与承接都健康。建议优先加大这些站点的内容产出与外链投入。',
       sites: winners,
     });
+  }
+
+  // Umami coverage gap. Only reported when the deployment configured Umami:
+  // a missing credential must not masquerade as an association problem.
+  if (umami) {
+    const umamiUnmatched = gsc.sites
+      .filter(
+        (site) =>
+          !umami.sites.some(
+            (u) => u.siteUrl === site.property.siteUrl && u.status === 'ready'
+          )
+      )
+      .map((site) => site.property.siteUrl);
+    if (umamiUnmatched.length > 0) {
+      insights.push({
+        id: 'umami-gap',
+        severity: 'medium',
+        title: `${umamiUnmatched.length} 个站点未关联 Umami`,
+        detail:
+          '这些站点缺少独立的站内流量口径。请在 Umami 后台把网站域名设为该站域名（如 visualiquid.com），否则无法自动关联。',
+        sites: umamiUnmatched,
+      });
+    }
   }
 
   return insights;

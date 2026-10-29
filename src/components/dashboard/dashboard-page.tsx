@@ -13,6 +13,10 @@ import type {
   SearchProperty,
   SearchReport,
 } from '@/features/gsc/types';
+import type {
+  UmamiOverviewReport,
+  UmamiSiteReport,
+} from '@/features/umami/types';
 import { useDashboardResource } from '@/hooks/use-dashboard-resource';
 import { AccessScreen } from './access-screen';
 import { BingOverviewSection, BingSiteSection } from './bing';
@@ -26,6 +30,8 @@ import {
   EmptyProperties,
   PropertyReport,
 } from './report-components';
+import { SiteExportBar } from './site-export';
+import { UmamiOverviewSection, UmamiSiteSection } from './umami';
 
 /**
  * Orchestration only: both entry routes render this same private workspace.
@@ -77,7 +83,30 @@ export function DashboardPage() {
     ready && selected !== 'overview' ? `/api/bing/report?${params}` : null,
     onUnauthorized
   );
+  const umamiOverview = useDashboardResource<UmamiOverviewReport>(
+    ready && selected === 'overview'
+      ? `/api/umami/overview?${new URLSearchParams(range)}`
+      : null,
+    onUnauthorized
+  );
+  const umamiDetail = useDashboardResource<UmamiSiteReport>(
+    ready && selected !== 'overview' ? `/api/umami/report?${params}` : null,
+    onUnauthorized
+  );
   const active = selected === 'overview' ? overview : detail;
+  // A source that is still loading is neither connected nor missing. The export
+  // must not write "未接入" while its request is still in flight.
+  const exportSources = [
+    [ga4Detail, 'ga4'],
+    [bingDetail, 'bing'],
+    [umamiDetail, 'umami'],
+  ] as const;
+  const exportPending = exportSources
+    .filter(([resource]) => resource.loading)
+    .map(([, source]) => source);
+  const exportFailed = exportSources
+    .filter(([resource]) => resource.error)
+    .map(([, source]) => source);
 
   async function unlock(password: string) {
     await requestJson('/api/auth/unlock', {
@@ -182,6 +211,7 @@ export function DashboardPage() {
                       gsc: overview.data,
                       ga4: ga4Overview.data,
                       bing: bingOverview.data,
+                      umami: umamiOverview.data ?? undefined,
                     }}
                     range={range}
                     onSelect={setSelected}
@@ -196,9 +226,19 @@ export function DashboardPage() {
                 />
                 <Ga4OverviewSection resource={ga4Overview} />
                 <BingOverviewSection resource={bingOverview} />
+                <UmamiOverviewSection resource={umamiOverview} />
               </>
             ) : detail.data ? (
               <>
+                <SiteExportBar
+                  siteUrl={selected}
+                  gsc={detail.data}
+                  ga4={ga4Detail.data ?? undefined}
+                  bing={bingDetail.data ?? undefined}
+                  umami={umamiDetail.data ?? undefined}
+                  pendingSources={exportPending}
+                  failedSources={exportFailed}
+                />
                 <PropertyReport
                   report={detail.data}
                   metric={metric}
@@ -206,6 +246,7 @@ export function DashboardPage() {
                 />
                 <Ga4SiteSection resource={ga4Detail} />
                 <BingSiteSection resource={bingDetail} />
+                <UmamiSiteSection resource={umamiDetail} />
               </>
             ) : null}
           </>

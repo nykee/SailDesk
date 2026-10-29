@@ -24,6 +24,8 @@ import { Route as ApiBingOverviewRouteImport } from './routes/api/bing/overview'
 import { Route as ApiBingReportRouteImport } from './routes/api/bing/report'
 import { Route as ApiGa4OverviewRouteImport } from './routes/api/ga4/overview'
 import { Route as ApiGa4ReportRouteImport } from './routes/api/ga4/report'
+import { Route as ApiUmamiOverviewRouteImport } from './routes/api/umami/overview'
+import { Route as ApiUmamiReportRouteImport } from './routes/api/umami/report'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +102,16 @@ const ApiGa4ReportRoute = ApiGa4ReportRouteImport.update({
   path: '/api/ga4/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUmamiOverviewRoute = ApiUmamiOverviewRouteImport.update({
+  id: '/api/umami/overview',
+  path: '/api/umami/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUmamiReportRoute = ApiUmamiReportRouteImport.update({
+  id: '/api/umami/report',
+  path: '/api/umami/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/api/bing/report': typeof ApiBingReportRoute
   '/api/ga4/overview': typeof ApiGa4OverviewRoute
   '/api/ga4/report': typeof ApiGa4ReportRoute
+  '/api/umami/overview': typeof ApiUmamiOverviewRoute
+  '/api/umami/report': typeof ApiUmamiReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +148,8 @@ export interface FileRoutesByTo {
   '/api/bing/report': typeof ApiBingReportRoute
   '/api/ga4/overview': typeof ApiGa4OverviewRoute
   '/api/ga4/report': typeof ApiGa4ReportRoute
+  '/api/umami/overview': typeof ApiUmamiOverviewRoute
+  '/api/umami/report': typeof ApiUmamiReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +168,8 @@ export interface FileRoutesById {
   '/api/bing/report': typeof ApiBingReportRoute
   '/api/ga4/overview': typeof ApiGa4OverviewRoute
   '/api/ga4/report': typeof ApiGa4ReportRoute
+  '/api/umami/overview': typeof ApiUmamiOverviewRoute
+  '/api/umami/report': typeof ApiUmamiReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +189,8 @@ export interface FileRouteTypes {
     | '/api/bing/report'
     | '/api/ga4/overview'
     | '/api/ga4/report'
+    | '/api/umami/overview'
+    | '/api/umami/report'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +208,8 @@ export interface FileRouteTypes {
     | '/api/bing/report'
     | '/api/ga4/overview'
     | '/api/ga4/report'
+    | '/api/umami/overview'
+    | '/api/umami/report'
   id:
     | '__root__'
     | '/'
@@ -205,6 +227,8 @@ export interface FileRouteTypes {
     | '/api/bing/report'
     | '/api/ga4/overview'
     | '/api/ga4/report'
+    | '/api/umami/overview'
+    | '/api/umami/report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +247,8 @@ export interface RootRouteChildren {
   ApiBingReportRoute: typeof ApiBingReportRoute
   ApiGa4OverviewRoute: typeof ApiGa4OverviewRoute
   ApiGa4ReportRoute: typeof ApiGa4ReportRoute
+  ApiUmamiOverviewRoute: typeof ApiUmamiOverviewRoute
+  ApiUmamiReportRoute: typeof ApiUmamiReportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +358,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGa4ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/umami/overview': {
+      id: '/api/umami/overview'
+      path: '/api/umami/overview'
+      fullPath: '/api/umami/overview'
+      preLoaderRoute: typeof ApiUmamiOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/umami/report': {
+      id: '/api/umami/report'
+      path: '/api/umami/report'
+      fullPath: '/api/umami/report'
+      preLoaderRoute: typeof ApiUmamiReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -351,6 +391,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBingReportRoute: ApiBingReportRoute,
   ApiGa4OverviewRoute: ApiGa4OverviewRoute,
   ApiGa4ReportRoute: ApiGa4ReportRoute,
+  ApiUmamiOverviewRoute: ApiUmamiOverviewRoute,
+  ApiUmamiReportRoute: ApiUmamiReportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

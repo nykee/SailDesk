@@ -60,6 +60,46 @@ async function mockDashboard(page: Page, failure = false) {
       }),
     });
   });
+  // Every API the dashboard calls has to be answered here. An unhandled call
+  // reaches the real Worker, comes back 401, and the hook locks the dashboard —
+  // which detaches the DOM mid-test and looks like a UI bug.
+  await page.route('**/api/bing/overview?*', (route) =>
+    route.fulfill({
+      json: {
+        configured: false,
+        available: false,
+        totals: null,
+        sites: [],
+        missingFromBing: [],
+        unmatchedBingSites: [],
+        fetchedAt: new Date().toISOString(),
+      },
+    })
+  );
+  await page.route('**/api/umami/overview?*', (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    const range = {
+      startDate: params.get('startDate') as string,
+      endDate: params.get('endDate') as string,
+    };
+    return route.fulfill({
+      json: {
+        requestedRange: range,
+        range,
+        sites: [],
+        websites: [],
+        totals: null,
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  });
+  // Detail-only sources: an explicit failure keeps the section honest without
+  // ever returning 401.
+  for (const path of ['**/api/bing/report?*', '**/api/umami/report?*']) {
+    await page.route(path, (route) =>
+      route.fulfill({ status: 503, json: { error: 'fixture: 未接入' } })
+    );
+  }
 }
 
 test.describe('portfolio performance overview', () => {
@@ -71,7 +111,7 @@ test.describe('portfolio performance overview', () => {
     await expect(
       page.getByRole('heading', { name: '全部站点总览' })
     ).toBeVisible();
-    const table = page.getByRole('table').first();
+    const table = page.locator('.portfolio-sites .site-table');
     await expect(table.locator('tbody tr')).toHaveCount(5);
     await expect(table.locator('tbody tr').first()).toContainText(
       'alpha.example'

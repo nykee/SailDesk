@@ -37,65 +37,65 @@ const metrics = (
 
 describe('GA4 hostname matching', () => {
   it('covers subdomains for domain properties but exact hosts for URL prefixes', () => {
-    const domainRule = gscHostnameRule('sc-domain:kuvatom.com');
-    expect(hostnameMatches(domainRule, 'kuvatom.com')).toBe(true);
-    expect(hostnameMatches(domainRule, 'www.kuvatom.com')).toBe(true);
-    expect(hostnameMatches(domainRule, 'kuvatom.com.evil.io')).toBe(false);
-    const prefixRule = gscHostnameRule('https://www.kuvatom.com/');
-    expect(hostnameMatches(prefixRule, 'www.kuvatom.com')).toBe(true);
-    expect(hostnameMatches(prefixRule, 'kuvatom.com')).toBe(false);
+    const domainRule = gscHostnameRule('sc-domain:alpha.example');
+    expect(hostnameMatches(domainRule, 'alpha.example')).toBe(true);
+    expect(hostnameMatches(domainRule, 'www.alpha.example')).toBe(true);
+    expect(hostnameMatches(domainRule, 'alpha.example.evil.io')).toBe(false);
+    const prefixRule = gscHostnameRule('https://www.alpha.example/');
+    expect(hostnameMatches(prefixRule, 'www.alpha.example')).toBe(true);
+    expect(hostnameMatches(prefixRule, 'alpha.example')).toBe(false);
   });
 
   it('matches display names only on the whole normalized domain, never on fragments', () => {
     expect(
-      displayNameMatchesDomain('kuvatom.com', 'sc-domain:kuvatom.com')
+      displayNameMatchesDomain('alpha.example', 'sc-domain:alpha.example')
     ).toBe(true);
     expect(
-      displayNameMatchesDomain(' Kuvatom . com ', 'sc-domain:kuvatom.com')
+      displayNameMatchesDomain(' ALPHA . example ', 'sc-domain:alpha.example')
     ).toBe(true);
-    expect(displayNameMatchesDomain('kuvatom', 'sc-domain:kuvatom.com')).toBe(
+    expect(displayNameMatchesDomain('alpha', 'sc-domain:alpha.example')).toBe(
       false
     );
     // The fragment danger case: two real sites in the same portfolio.
-    expect(
-      displayNameMatchesDomain('kuvstudio', 'sc-domain:kuvmusic.com')
-    ).toBe(false);
-    expect(displayNameMatchesDomain('kuvmusic', 'sc-domain:kuvmusic.com')).toBe(
+    expect(displayNameMatchesDomain('gamma', 'sc-domain:beta.example')).toBe(
+      false
+    );
+    expect(displayNameMatchesDomain('beta', 'sc-domain:beta.example')).toBe(
       false
     );
   });
 
   it('assigns at most one site per GA4 property so traffic is never double counted', () => {
     const sites = [
-      { siteUrl: 'sc-domain:kuvmusic.com', permissionLevel: 'siteOwner' },
-      { siteUrl: 'sc-domain:kuvatom.com', permissionLevel: 'siteOwner' },
+      { siteUrl: 'sc-domain:beta.example', permissionLevel: 'siteOwner' },
+      { siteUrl: 'sc-domain:alpha.example', permissionLevel: 'siteOwner' },
     ];
     const summaries = [
-      { propertyId: '421', displayName: 'kuvatom.com' },
+      { propertyId: '421', displayName: 'alpha.example' },
       { propertyId: '422', displayName: 'Music' },
     ];
     // Without host probes only the display-name match links.
     expect(
       assignGa4Properties(sites, summaries, new Map()).get(
-        'sc-domain:kuvatom.com'
+        'sc-domain:alpha.example'
       )
     ).toEqual({
       propertyId: '421',
-      displayName: 'kuvatom.com',
+      displayName: 'alpha.example',
     });
     expect(
       assignGa4Properties(sites, summaries, new Map()).has(
-        'sc-domain:kuvmusic.com'
+        'sc-domain:beta.example'
       )
     ).toBe(false);
     // Host probes rescue the remaining property, and each site claims its own.
     const assignments = assignGa4Properties(
       sites,
       summaries,
-      new Map([['422', ['kuvmusic.com']]])
+      new Map([['422', ['beta.example']]])
     );
-    expect(assignments.get('sc-domain:kuvmusic.com')?.propertyId).toBe('422');
-    expect(assignments.get('sc-domain:kuvatom.com')?.propertyId).toBe('421');
+    expect(assignments.get('sc-domain:beta.example')?.propertyId).toBe('422');
+    expect(assignments.get('sc-domain:alpha.example')?.propertyId).toBe('421');
   });
 
   it('keeps an aggregated property from being claimed by a second site', () => {

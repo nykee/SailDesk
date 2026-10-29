@@ -1,5 +1,6 @@
 import {
   IconBrandBing,
+  IconChartBar,
   IconChartLine,
   IconSearch,
   IconTrendingUp,
@@ -24,19 +25,26 @@ import {
 } from '@/features/gsc/format';
 import { propertyName } from '@/features/gsc/property';
 import type { OverviewReport } from '@/features/gsc/types';
+import type { UmamiOverviewReport } from '@/features/umami/types';
 import { VolumeChange } from './report-components';
 
 type Reports = {
   gsc: OverviewReport;
   ga4: Ga4OverviewReport;
   bing: BingOverviewReport;
+  /** Optional: a deployment without a Umami key keeps the other three. */
+  umami?: UmamiOverviewReport;
 };
 
-type AnyReport = OverviewReport | Ga4OverviewReport | BingOverviewReport;
+type AnyReport =
+  | OverviewReport
+  | Ga4OverviewReport
+  | BingOverviewReport
+  | UmamiOverviewReport;
 
 /** Per-source card layout. Every metric exists on the matching performance type. */
 const sourceFields: Record<
-  'gsc' | 'ga4' | 'bing',
+  'gsc' | 'ga4' | 'bing' | 'umami',
   Array<{ label: string; field: string; summable: boolean }>
 > = {
   gsc: [
@@ -58,12 +66,18 @@ const sourceFields: Record<
     { label: '点击率', field: 'ctr', summable: false },
     { label: '平均排名', field: 'position', summable: false },
   ],
+  umami: [
+    { label: '浏览量', field: 'pageviews', summable: true },
+    { label: '访客', field: 'visitors', summable: true },
+    { label: '访问次数', field: 'visits', summable: true },
+  ],
 };
 
 const sourceMeta = [
   { key: 'gsc', label: 'Google 搜索', icon: IconSearch },
   { key: 'ga4', label: 'Google Analytics', icon: IconChartLine },
   { key: 'bing', label: 'Bing Webmaster', icon: IconBrandBing },
+  { key: 'umami', label: 'Umami', icon: IconChartBar },
 ] as const;
 
 /**
@@ -81,16 +95,30 @@ export function CombinedOverview({
   onSelect: (siteUrl: string) => void;
 }) {
   const sites = useMemo(
-    () => joinSites(reports.gsc, reports.ga4, reports.bing),
-    [reports.gsc, reports.ga4, reports.bing]
+    () => joinSites(reports.gsc, reports.ga4, reports.bing, reports.umami),
+    [reports.gsc, reports.ga4, reports.bing, reports.umami]
   );
   const summary = useMemo(
-    () => buildSummary(reports.gsc, reports.ga4, reports.bing, sites),
-    [reports.gsc, reports.ga4, reports.bing, sites]
+    () =>
+      buildSummary(
+        reports.gsc,
+        reports.ga4,
+        reports.bing,
+        sites,
+        reports.umami
+      ),
+    [reports.gsc, reports.ga4, reports.bing, reports.umami, sites]
   );
   const insights = useMemo(
-    () => buildInsights(reports.gsc, reports.ga4, reports.bing, sites),
-    [reports.gsc, reports.ga4, reports.bing, sites]
+    () =>
+      buildInsights(
+        reports.gsc,
+        reports.ga4,
+        reports.bing,
+        sites,
+        reports.umami
+      ),
+    [reports.gsc, reports.ga4, reports.bing, reports.umami, sites]
   );
   const ranked = useMemo(() => rankSites(sites), [sites]);
 
@@ -100,7 +128,8 @@ export function CombinedOverview({
         <div>
           <p className="eyebrow">PORTFOLIO OVERVIEW</p>
           <h2>
-            <IconTrendingUp size={20} /> 全站总览（三维度）
+            <IconTrendingUp size={20} /> 全站总览（
+            {sourceMeta.filter((source) => reports[source.key]).length} 维度）
           </h2>
         </div>
         <span className="query-count">
@@ -111,15 +140,19 @@ export function CombinedOverview({
       <SummaryStrip summary={summary} />
 
       <div className="combined-metrics">
-        {sourceMeta.map((source) => (
-          <SourceGroup
-            key={source.key}
-            sourceKey={source.key}
-            label={source.label}
-            icon={source.icon}
-            report={reports[source.key]}
-          />
-        ))}
+        {sourceMeta.map((source) => {
+          const report = reports[source.key];
+          if (!report) return null;
+          return (
+            <SourceGroup
+              key={source.key}
+              sourceKey={source.key}
+              label={source.label}
+              icon={source.icon}
+              report={report}
+            />
+          );
+        })}
       </div>
 
       <p className="combined-footnote">
@@ -170,6 +203,14 @@ function SummaryStrip({
       label: 'Bing 总点击',
       current: summary.bingClicks,
       previous: summary.bingClicksPrevious,
+    },
+    {
+      label: 'Umami 浏览量',
+      // A missing credential must read as "not connected", never as zero
+      // traffic, so the strip borrows the explicit-value slot for that case.
+      value: summary.umamiPageviews === null ? '未接入' : undefined,
+      current: summary.umamiPageviews,
+      previous: summary.umamiPageviewsPrevious,
     },
     {
       label: '搜索点击占比',
@@ -230,7 +271,7 @@ function SourceGroup({
   icon: Icon,
   report,
 }: {
-  sourceKey: 'gsc' | 'ga4' | 'bing';
+  sourceKey: keyof typeof sourceFields;
   label: string;
   icon: typeof IconSearch;
   report: AnyReport;
@@ -322,7 +363,7 @@ function CombinedSiteTable({
   onSelect: (siteUrl: string) => void;
 }) {
   return (
-    <section className="site-table-scroll" aria-label="站点三维度对比">
+    <section className="site-table-scroll" aria-label="站点多源对比">
       <table className="site-table combined-table">
         <thead>
           <tr>
@@ -355,10 +396,12 @@ function CombinedRow({
   const gsc = site.gsc;
   const ga4 = site.ga4;
   const bing = site.bing;
+  const umami = site.umami;
   const coverage: string[] = [];
   if (gsc) coverage.push('G');
   if (ga4) coverage.push('A');
   if (bing) coverage.push('B');
+  if (umami) coverage.push('U');
   return (
     <tr>
       <th scope="row">
@@ -417,6 +460,21 @@ function CombinedRow({
           </>
         ) : (
           <span className="coverage-missing">未验证</span>
+        )}
+      </td>
+      <td className="volume-cell">
+        {umami ? (
+          <>
+            {formatCompact(umami.metrics.pageviews)}
+            <div className="delta-cell">
+              <VolumeChange
+                current={umami.metrics.pageviews}
+                previous={umami.previousMetrics.pageviews}
+              />
+            </div>
+          </>
+        ) : (
+          <span className="coverage-missing">未接入</span>
         )}
       </td>
       <td>

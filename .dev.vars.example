@@ -9,3 +9,7 @@ DASHBOARD_SESSION_SECRET=
 # Optional. Bing Webmaster Tools -> Settings -> API access.
 # Leave empty to hide the Bing section.
 BING_API_KEY=
+# Optional. Umami Cloud uses the default base URL; self-hosted sets its own.
+# Leave empty to hide the Umami section.
+UMAMI_API_KEY=
+# UMAMI_BASE_URL=https://api.umami.is/v1

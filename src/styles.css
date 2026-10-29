@@ -366,6 +366,79 @@ input:focus-visible {
   cursor: pointer;
 }
 
+.export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 20px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #10151a;
+  padding: 12px 14px;
+}
+.export-copy {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.export-copy > svg {
+  flex: none;
+  color: var(--subtle);
+}
+.export-copy strong {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+.export-copy span {
+  display: block;
+  margin-top: 3px;
+  color: var(--subtle);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.export-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+}
+.export-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #161c22;
+  padding: 7px 11px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+.export-actions button:hover {
+  border-color: #35433a;
+  background: #1b232a;
+  color: var(--lime);
+}
+.export-actions button:disabled {
+  border-color: var(--line);
+  background: #131920;
+  color: var(--subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.export-actions button:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+
 .data-freshness {
   margin: 0 0 20px;
   color: var(--subtle);
@@ -824,6 +897,18 @@ tbody td {
     width: 100%;
     justify-content: space-between;
   }
+  .export-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .export-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .export-actions button {
+    justify-content: center;
+  }
   .chart-section,
   .query-section {
     margin-top: 34px;
@@ -1240,9 +1325,28 @@ tbody td {
   justify-items: end;
   gap: 3px;
 }
-.delta-cell > span:last-child {
+/* Absolute delta text that sits beside VolumeChange keeps the quiet treatment;
+   the change itself must keep its semantic colour. */
+.delta-cell > span:last-child:not(.metric-change) {
   color: var(--subtle);
   font-size: 10px;
+}
+/* Direction chips: colour, arrow and sign all point the same way, so the state
+   never depends on colour alone. */
+.delta-cell > .metric-change {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.delta-cell > .metric-change.is-positive {
+  color: var(--lime);
+  background: rgba(166, 255, 101, 0.12);
+}
+.delta-cell > .metric-change.is-negative {
+  color: var(--red);
+  background: rgba(255, 134, 134, 0.14);
 }
 .site-sparkline {
   display: inline-block;
@@ -1497,6 +1601,63 @@ tbody td {
 .bing-section .site-table-scroll {
   margin-top: 34px;
 }
+
+/* Umami sections mirror GA4; Umami reports five metrics, so the grid is 5-up. */
+.umami-section {
+  margin-top: 42px;
+  border-top: 1px solid var(--line);
+  padding-top: 34px;
+}
+.umami-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.umami-section .metric-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.umami-section .site-table-scroll {
+  margin-top: 34px;
+}
+.umami-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 34px;
+}
+.umami-rank h3 {
+  margin: 0 0 12px;
+  color: #8b96a3;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.umami-rank ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.umami-rank li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.umami-rank li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.umami-rank-empty {
+  margin: 0;
+  color: #58636e;
+  font-size: 13px;
+}
+.site-row-state {
+  color: #8b96a3;
+}
 .bing-footnote {
   display: flex;
   align-items: center;
@@ -1545,6 +1706,19 @@ tbody td {
   .bing-section .metric-block:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
+  .umami-section .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .umami-section .metric-block:nth-child(4) {
+    border-left: none;
+    padding-left: 0;
+  }
+  .umami-section .metric-block:nth-child(n + 4) {
+    border-top: 1px solid var(--line);
+  }
+  .umami-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -1571,6 +1745,23 @@ tbody td {
   }
   .bing-section .metric-block:nth-child(n + 3) {
     border-top: 1px solid var(--line);
+  }
+  .umami-section .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .umami-section .metric-block:nth-child(4) {
+    border-left: 1px solid var(--line);
+    padding-left: 23px;
+  }
+  .umami-section .metric-block:nth-child(odd) {
+    border-left: none;
+    padding-left: 0;
+  }
+  .umami-section .metric-block:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .umami-columns {
+    grid-template-columns: 1fr;
   }
   .page-path-cell {
     max-width: 200px;
@@ -1707,6 +1898,9 @@ tbody td {
 }
 .coverage-B {
   background: var(--yellow);
+}
+.coverage-U {
+  background: #b98cff;
 }
 .coverage-missing {
   color: var(--subtle);
