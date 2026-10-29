@@ -41,7 +41,7 @@ export function AccessScreen({
         </h1>
         <p>
           本看板使用已授权 Google 账号的安全 refresh token，自动读取该账号下所有
-          Property，并把 Search Console、GA4 与 Bing Webmaster
+          Property，并把 Search Console、GA4、Bing Webmaster 与 Umami
           的数据放在同一处分析。
         </p>
         {error && (

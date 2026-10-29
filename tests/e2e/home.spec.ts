@@ -5,7 +5,7 @@ test.describe('GSC dashboard access boundary', () => {
     page,
   }) => {
     await page.goto('/');
-    await expect(page.locator('main h1')).toContainText('把所有 GSC 项目');
+    await expect(page.locator('main h1')).toContainText('把所有站点数据');
     await expect(page.locator('#dashboard-password')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   });
@@ -24,7 +24,7 @@ test.describe('GSC dashboard access boundary', () => {
     page,
   }) => {
     await page.goto('/zh');
-    await expect(page.locator('main h1')).toContainText('把所有 GSC 项目');
+    await expect(page.locator('main h1')).toContainText('把所有站点数据');
   });
 
   test('protects portfolio and report APIs before validating private request parameters', async ({

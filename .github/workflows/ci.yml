@@ -8,20 +8,44 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.30.3
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
+
+      # The Worker refuses to start without its required secrets, and the e2e
+      # suite asserts that an unauthenticated /api/properties returns 401. With
+      # no .dev.vars at all it would return 500 instead and the suite would look
+      # broken. These placeholders never reach a real API: the tests intercept
+      # transport, and nothing here is a working credential.
+      - name: Write placeholder secrets
+        run: |
+          cat > .dev.vars <<'EOF'
+          GOOGLE_OAUTH_CLIENT_ID=ci-placeholder.apps.googleusercontent.com
+          GOOGLE_OAUTH_CLIENT_SECRET=ci-placeholder
+          GSC_REFRESH_TOKEN=ci-placeholder
+          DASHBOARD_PASSWORD=ci-placeholder
+          DASHBOARD_SESSION_SECRET=ci-placeholder-session-secret
+          EOF
+
       - run: pnpm check
       - run: pnpm build
+
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
