@@ -8,6 +8,7 @@ import {
 import {
   aggregateGa4Metrics,
   aggregateGa4Trend,
+  ga4BreakdownRows,
   ga4ChannelRows,
   ga4Deltas,
   ga4MetricsFromValues,
@@ -170,5 +171,44 @@ describe('GA4 metric math', () => {
     ]);
     expect(rows[0]).toMatchObject({ sessions: 120, previousSessions: 90 });
     expect(rows[1].previousSessions).toBe(0);
+  });
+
+  it('joins breakdown rows on the dimension value and keeps the metric set', () => {
+    const rows = ga4BreakdownRows(
+      [
+        { label: 'google / organic', metrics: metrics(50, { keyEvents: 3 }) },
+        { label: 'direct / (none)', metrics: metrics(20) },
+      ],
+      [
+        { label: 'google / organic', metrics: metrics(40) },
+        // A value that disappeared this period must not appear in the table.
+        { label: 'bing / organic', metrics: metrics(15) },
+      ]
+    );
+    expect(rows.map((row) => row.label)).toEqual([
+      'google / organic',
+      'direct / (none)',
+    ]);
+    expect(rows[0]).toMatchObject({
+      sessions: 50,
+      previousSessions: 40,
+      users: 50,
+      pageviews: 100,
+      engagementRate: 0.5,
+      keyEvents: 3,
+    });
+    // A brand-new value has no baseline; callers render that as 新增.
+    expect(rows[1].previousSessions).toBe(0);
+  });
+
+  it('sorts breakdown rows by current sessions so the biggest source leads', () => {
+    const rows = ga4BreakdownRows(
+      [
+        { label: 'small', metrics: metrics(5) },
+        { label: 'large', metrics: metrics(80) },
+      ],
+      []
+    );
+    expect(rows.map((row) => row.label)).toEqual(['large', 'small']);
   });
 });

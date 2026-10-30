@@ -140,8 +140,7 @@ export function UmamiOverviewSection({
       </div>
       {matched.length === 0 ? (
         <DataState kind="empty" title="没有站点关联到 Umami 网站">
-          在 Umami 后台把网站域名设为该站域名（如
-          visualiquid.com）即可自动关联。
+          在 Umami 后台把网站域名设为该站域名（如 example.com）即可自动关联。
         </DataState>
       ) : (
         <>

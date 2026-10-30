@@ -47,6 +47,15 @@ function gscReport(overrides: Partial<SearchReport> = {}): SearchReport {
         position: 6.2,
       },
     ],
+    pages: [
+      {
+        page: 'https://example.com/tools/video',
+        clicks: 6,
+        impressions: 240,
+        ctr: 0.025,
+        position: 7.4,
+      },
+    ],
     ...overrides,
   };
 }
@@ -89,6 +98,63 @@ function ga4Report(): Ga4SiteReport {
       { channel: 'Direct', sessions: 100, previousSessions: 50 },
     ],
     pages: [{ pagePath: '/', sessions: 180, users: 150, pageviews: 400 }],
+    breakdowns: {
+      sources: [
+        {
+          label: 'google / organic',
+          sessions: 200,
+          previousSessions: 150,
+          users: 170,
+          pageviews: 380,
+          engagementRate: 0.52,
+          keyEvents: 7,
+        },
+      ],
+      landingPages: [
+        {
+          label: '/pricing',
+          sessions: 120,
+          previousSessions: 90,
+          users: 100,
+          pageviews: 240,
+          engagementRate: 0.6,
+          keyEvents: 5,
+        },
+      ],
+      devices: [
+        {
+          label: '移动端',
+          sessions: 180,
+          previousSessions: 120,
+          users: 150,
+          pageviews: 330,
+          engagementRate: 0.5,
+          keyEvents: 4,
+        },
+      ],
+      countries: [
+        {
+          label: 'United States',
+          sessions: 160,
+          previousSessions: 110,
+          users: 130,
+          pageviews: 300,
+          engagementRate: 0.55,
+          keyEvents: 6,
+        },
+      ],
+      events: [
+        {
+          label: 'sign_up',
+          sessions: 40,
+          previousSessions: 20,
+          users: 38,
+          pageviews: 45,
+          engagementRate: 0.8,
+          keyEvents: 12,
+        },
+      ],
+    },
   };
 }
 
@@ -300,7 +366,7 @@ describe('buildSiteReportMarkdown', () => {
   it('falls back to a placeholder when a section has no rows', () => {
     const markdown = buildSiteReportMarkdown(
       input({
-        gsc: gscReport({ trend: [], queries: [] }),
+        gsc: gscReport({ trend: [], queries: [], pages: [] }),
         ga4: { ...ga4Report(), channels: [], pages: [] },
         bing: bingReport({ weeks: [], queries: [], pages: [] }),
         umami: { ...umamiReport(), pages: [], referrers: [], events: [] },
@@ -308,9 +374,31 @@ describe('buildSiteReportMarkdown', () => {
     );
     expect(markdown).toContain('（该区间没有逐日数据）');
     expect(markdown).toContain('（该区间没有关键词数据）');
+    expect(markdown).toContain('（该区间没有页面数据）');
     expect(markdown).toContain('（没有渠道数据）');
     expect(markdown).toContain('（没有周桶数据）');
     expect(markdown).toContain('（没有事件数据）');
+  });
+
+  it('includes landing pages, which is what a page-level fix acts on', () => {
+    const markdown = buildSiteReportMarkdown(input());
+    expect(markdown).toContain('### 2.3 获得曝光的页面（Top 1）');
+    expect(markdown).toContain('https://example.com/tools/video');
+    expect(markdown).toContain('曝光高但点击率低的页面是优先项');
+  });
+
+  it('breaks GA4 down by source, landing page, device, country and event', () => {
+    const markdown = buildSiteReportMarkdown(input());
+    expect(markdown).toContain('### 3.4 来源 / 媒介');
+    expect(markdown).toContain('google / organic');
+    expect(markdown).toContain('### 3.5 落地页');
+    expect(markdown).toContain('/pricing');
+    expect(markdown).toContain('### 3.6 设备');
+    expect(markdown).toContain('移动端');
+    expect(markdown).toContain('### 3.7 国家 / 地区');
+    expect(markdown).toContain('United States');
+    expect(markdown).toContain('### 3.8 事件');
+    expect(markdown).toContain('sign_up');
   });
 
   it('flags a truncated Bing result so long-tail totals are read as approximate', () => {
@@ -325,13 +413,13 @@ describe('buildSiteReportCsv', () => {
   it('starts with the wide header and keeps one row per entity', () => {
     const lines = buildSiteReportCsv(input()).split('\n');
     expect(lines[0]).toBe(
-      'source,table,item,value,previous,delta,clicks,impressions,ctr,position,sessions,users,pageviews,visits,count'
+      'source,table,item,value,previous,delta,clicks,impressions,ctr,position,sessions,users,pageviews,visits,keyEvents,count'
     );
-    // 4 GSC summary + 1 query + 1 trend + 6 GA4 summary + 2 channels + 1 page
-    // + 1 Bing week + 1 Bing query + 1 Bing page + 5 Umami summary + 1 page
-    // + 1 referrer + 1 event.
+    // 4 GSC summary + 1 query + 1 page + 1 trend + 6 GA4 summary + 2 channels
+    // + 1 page + 5 breakdowns + 1 Bing week + 1 Bing query + 1 Bing page
+    // + 5 Umami summary + 1 page + 1 referrer + 1 event.
     expect(lines).toHaveLength(
-      1 + 4 + 1 + 1 + 6 + 2 + 1 + 1 + 1 + 1 + 5 + 1 + 1 + 1
+      1 + 4 + 1 + 1 + 1 + 6 + 2 + 1 + 5 + 1 + 1 + 1 + 5 + 1 + 1 + 1
     );
   });
 
@@ -339,6 +427,26 @@ describe('buildSiteReportCsv', () => {
     const lines = buildSiteReportCsv(input()).split('\n').slice(1);
     const sources = new Set(lines.map((line) => line.split(',')[0]));
     expect([...sources].sort()).toEqual(['bing', 'ga4', 'gsc', 'umami']);
+  });
+
+  it('keeps GSC queries and pages as separate table values', () => {
+    const csv = buildSiteReportCsv(input());
+    expect(csv).toContain('gsc,query,ai video tool,,,,10,300,0.033,6.2');
+    expect(csv).toContain(
+      'gsc,page,https://example.com/tools/video,,,,6,240,0.025,7.4'
+    );
+  });
+
+  it('emits one row per GA4 breakdown value, tagged by dimension', () => {
+    const csv = buildSiteReportCsv(input());
+    for (const expected of [
+      'ga4,source,google / organic',
+      'ga4,landing,/pricing',
+      'ga4,device,移动端',
+      'ga4,country,United States',
+      'ga4,event,sign_up',
+    ])
+      expect(csv).toContain(expected);
   });
 
   it('omits rows for sources that are not connected', () => {

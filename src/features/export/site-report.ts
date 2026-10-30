@@ -1,5 +1,5 @@
 import type { BingSiteReport } from '@/features/bing/types';
-import type { Ga4SiteReport } from '@/features/ga4/types';
+import type { Ga4BreakdownRow, Ga4SiteReport } from '@/features/ga4/types';
 import { type DateRange, previousDateRange } from '@/features/gsc/date-range';
 import {
   formatNumber,
@@ -271,6 +271,20 @@ function gscSection(input: SiteExportInput): string {
       )
     : '（该区间没有关键词数据）';
 
+  const pages = input.gsc.pages.length
+    ? table(
+        ['#', '页面', '点击', '曝光', 'CTR', '平均排名'],
+        input.gsc.pages.map((row, index) => [
+          String(index + 1),
+          row.page,
+          formatNumber(row.clicks),
+          formatNumber(row.impressions),
+          formatPercent(row.ctr),
+          formatPosition(row.position),
+        ])
+      )
+    : '（该区间没有页面数据）';
+
   return section(
     '2. Google Search Console',
     [
@@ -281,7 +295,42 @@ function gscSection(input: SiteExportInput): string {
       `### 2.2 热门查询（Top ${input.gsc.queries.length}）`,
       '',
       queries,
+      '',
+      `### 2.3 获得曝光的页面（Top ${input.gsc.pages.length}）`,
+      '',
+      '> 曝光高但点击率低的页面是优先项：问题在标题与摘要，不在内容。',
+      '',
+      pages,
     ].join('\n')
+  );
+}
+
+/** Shared shape for the five GA4 breakdown dimensions. */
+function breakdownTable(rows: Ga4BreakdownRow[]): string {
+  if (!rows.length) return '（该维度没有数据）';
+  return table(
+    [
+      '#',
+      '名称',
+      '会话',
+      '上期',
+      '变化',
+      '用户',
+      '浏览量',
+      '互动率',
+      '关键事件',
+    ],
+    rows.map((row, index) => [
+      String(index + 1),
+      row.label,
+      formatNumber(row.sessions),
+      formatNumber(row.previousSessions),
+      changeLabel(row.sessions, row.previousSessions),
+      formatNumber(row.users),
+      formatNumber(row.pageviews),
+      formatPercent(row.engagementRate),
+      formatNumber(row.keyEvents),
+    ])
   );
 }
 
@@ -386,6 +435,30 @@ function ga4Section(input: SiteExportInput): string {
       '### 3.3 热门页面',
       '',
       pagesTable,
+      '',
+      '### 3.4 来源 / 媒介',
+      '',
+      '> 渠道组太粗：「自然搜索」看不出是哪个来源带来的会话。',
+      '',
+      breakdownTable(input.ga4.breakdowns.sources),
+      '',
+      '### 3.5 落地页',
+      '',
+      '> 会话最高的落地页是用户对产品的第一印象，优先优化这一页。',
+      '',
+      breakdownTable(input.ga4.breakdowns.landingPages),
+      '',
+      '### 3.6 设备',
+      '',
+      breakdownTable(input.ga4.breakdowns.devices),
+      '',
+      '### 3.7 国家 / 地区',
+      '',
+      breakdownTable(input.ga4.breakdowns.countries),
+      '',
+      '### 3.8 事件',
+      '',
+      breakdownTable(input.ga4.breakdowns.events),
     ].join('\n')
   );
 }
@@ -599,6 +672,7 @@ const CSV_HEADER = [
   'users',
   'pageviews',
   'visits',
+  'keyEvents',
   'count',
 ] as const;
 
@@ -636,6 +710,23 @@ export function buildSiteReportCsv(input: SiteExportInput): string {
         'gsc',
         'query',
         row.query,
+        null,
+        null,
+        null,
+        row.clicks,
+        row.impressions,
+        row.ctr,
+        row.position,
+      ])
+    );
+  }
+
+  for (const row of input.gsc.pages) {
+    rows.push(
+      csvRow([
+        'gsc',
+        'page',
+        row.page,
         null,
         null,
         null,
@@ -722,6 +813,38 @@ export function buildSiteReportCsv(input: SiteExportInput): string {
           row.pageviews,
         ])
       );
+    }
+    // Breakdown rows mirror the channel row shape: previous/delta describe
+    // sessions, and the typed columns carry the rest.
+    const breakdownTables: Array<[string, Ga4BreakdownRow[]]> = [
+      ['source', ga4.breakdowns.sources],
+      ['landing', ga4.breakdowns.landingPages],
+      ['device', ga4.breakdowns.devices],
+      ['country', ga4.breakdowns.countries],
+      ['event', ga4.breakdowns.events],
+    ];
+    for (const [tableName, tableRows] of breakdownTables) {
+      for (const row of tableRows) {
+        rows.push(
+          csvRow([
+            'ga4',
+            tableName,
+            row.label,
+            null,
+            row.previousSessions,
+            row.sessions - row.previousSessions,
+            null,
+            null,
+            null,
+            null,
+            row.sessions,
+            row.users,
+            row.pageviews,
+            null,
+            row.keyEvents,
+          ])
+        );
+      }
     }
   }
 
@@ -842,6 +965,8 @@ export function buildSiteReportCsv(input: SiteExportInput): string {
           'umami',
           'event',
           row.name,
+          null,
+          null,
           null,
           null,
           null,

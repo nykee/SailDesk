@@ -304,6 +304,15 @@ export function PerformanceChart({
   );
 }
 
+/** URLs are long; the path is what a reader compares, the full URL stays in `title`. */
+function pagePath(page: string): string {
+  try {
+    return new URL(page).pathname || '/';
+  } catch {
+    return page;
+  }
+}
+
 /** Keywords are a property-specific detail; the summary/chart remain reusable. */
 export function PropertyReport({
   report,
@@ -356,6 +365,44 @@ export function PropertyReport({
           </table>
           {!report.queries.length && (
             <div className="table-empty">该范围内没有关键词数据。</div>
+          )}
+        </div>
+      </section>
+      <section className="query-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">LANDING PAGES</p>
+            <h2>获得曝光的页面</h2>
+          </div>
+          <span className="query-count">前 {report.pages.length} 项</span>
+        </div>
+        <div className="query-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">页面</th>
+                <th scope="col">点击</th>
+                <th scope="col">曝光</th>
+                <th scope="col">CTR</th>
+                <th scope="col">平均排名</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.pages.map((row) => (
+                <tr key={row.page}>
+                  <th scope="row" title={row.page}>
+                    {pagePath(row.page)}
+                  </th>
+                  <td>{formatNumber(row.clicks)}</td>
+                  <td>{formatNumber(row.impressions)}</td>
+                  <td>{formatPercent(row.ctr)}</td>
+                  <td>{formatPosition(row.position)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!report.pages.length && (
+            <div className="table-empty">该范围内没有页面数据。</div>
           )}
         </div>
       </section>

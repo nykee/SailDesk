@@ -316,6 +316,11 @@ input:focus-visible {
   margin: 0;
   min-inline-size: 0;
 }
+/* Five tabs wrap on narrow screens instead of shrinking into unreadable chips. */
+.breakdown-switch {
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
 .preset-group button,
 .metric-switch button {
   border: 0;

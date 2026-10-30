@@ -45,6 +45,29 @@ export type Ga4PageRow = {
   pageviews: number;
 };
 
+/**
+ * A single dimension value with the current window and the same value in the
+ * previous window. Channel groups are too coarse to act on: `Organic Search`
+ * does not tell you which source or which landing page earned the sessions.
+ */
+export type Ga4BreakdownRow = {
+  label: string;
+  sessions: number;
+  previousSessions: number;
+  users: number;
+  pageviews: number;
+  engagementRate: number;
+  keyEvents: number;
+};
+
+export type Ga4Breakdowns = {
+  sources: Ga4BreakdownRow[];
+  landingPages: Ga4BreakdownRow[];
+  devices: Ga4BreakdownRow[];
+  countries: Ga4BreakdownRow[];
+  events: Ga4BreakdownRow[];
+};
+
 /** A linked GA4 property, identified by its Admin API resource id. */
 export type Ga4Link = {
   propertyId: string;
@@ -74,4 +97,5 @@ export type Ga4SiteReport = Ga4Performance & {
   link: Ga4Link;
   channels: Ga4ChannelRow[];
   pages: Ga4PageRow[];
+  breakdowns: Ga4Breakdowns;
 };

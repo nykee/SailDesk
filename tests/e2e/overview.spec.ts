@@ -47,7 +47,7 @@ async function mockDashboard(page: Page, failure = false) {
     return route.fulfill({
       json:
         site?.status === 'ready'
-          ? { ...site.performance, queries: [] }
+          ? { ...site.performance, queries: [], pages: [] }
           : { error: 'Unknown site' },
     });
   });

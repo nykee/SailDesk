@@ -6,12 +6,15 @@ import {
   aggregateGa4Metrics,
   aggregateGa4Trend,
   GA4_METRIC_API_NAMES,
+  ga4BreakdownRows,
   ga4ChannelRows,
   ga4Deltas,
   ga4MetricsFromValues,
   normalizeGa4Date,
 } from '@/features/ga4/metrics';
 import type {
+  Ga4BreakdownRow,
+  Ga4Breakdowns,
   Ga4ChannelRow,
   Ga4Link,
   Ga4Metrics,
@@ -135,12 +138,79 @@ export async function getGa4Report(
       404,
       '该站点没有匹配到 GA4 媒体资源。可在 GA4 后台把属性名称改为站点域名（如 example.com）后自动关联。'
     );
-  const [performance, channels, pages] = await Promise.all([
+  const [performance, channels, pages, breakdowns] = await Promise.all([
     ga4Performance(token, link, siteUrl, range),
     ga4Channels(token, link.propertyId, range),
     ga4TopPages(token, link.propertyId, range),
+    ga4Breakdowns(token, link.propertyId, range),
   ]);
-  return { ...performance, link, channels, pages };
+  return { ...performance, link, channels, pages, breakdowns };
+}
+
+/**
+ * Channel groups are too coarse to act on, so the detail view also asks for the
+ * dimensions an operator actually changes: which source, which landing page,
+ * which device, which country, which event. Five extra runReport calls still
+ * leave this endpoint far below the Workers subrequest ceiling.
+ */
+async function ga4Breakdowns(
+  token: string,
+  propertyId: string,
+  range: DateRange
+): Promise<Ga4Breakdowns> {
+  const [sources, landingPages, devices, countries, events] = await Promise.all(
+    [
+      ga4Breakdown(token, propertyId, range, 'sessionSourceMedium', 10),
+      ga4Breakdown(token, propertyId, range, 'landingPage', 10),
+      ga4Breakdown(token, propertyId, range, 'deviceCategory', 5),
+      ga4Breakdown(token, propertyId, range, 'country', 10),
+      ga4Breakdown(token, propertyId, range, 'eventName', 15),
+    ]
+  );
+  return { sources, landingPages, devices, countries, events };
+}
+
+async function ga4Breakdown(
+  token: string,
+  propertyId: string,
+  range: DateRange,
+  dimension: string,
+  limit: number
+): Promise<Ga4BreakdownRow[]> {
+  const payload = await runReport(token, propertyId, {
+    dateRanges: [range, previousDateRange(range)],
+    dimensions: [{ name: dimension }],
+    metrics: Object.values(GA4_METRIC_API_NAMES).map((name) => ({ name })),
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit,
+  });
+  const { current, prior } = splitDimensionRows(payload.rows ?? [], 1);
+  const label = (key: string) =>
+    dimension === 'sessionSourceMedium'
+      ? sourceMediumLabel(key)
+      : dimension === 'deviceCategory'
+        ? deviceLabel(key)
+        : key;
+  return ga4BreakdownRows(
+    current.map(({ key, metrics }) => ({ label: label(key), metrics })),
+    prior.map(({ key, metrics }) => ({ label: label(key), metrics }))
+  );
+}
+
+/** GA4 reports source/medium as `google / organic`; keep it readable but exact. */
+function sourceMediumLabel(key: string): string {
+  return key === '(not set)' ? '未标记来源' : key;
+}
+
+function deviceLabel(key: string): string {
+  const labels: Record<string, string> = {
+    desktop: '桌面端',
+    mobile: '移动端',
+    tablet: '平板',
+    'smart tv': '电视',
+    console: '游戏主机',
+  };
+  return labels[key] ?? key;
 }
 
 async function listGa4Properties(token: string): Promise<Ga4PropertySummary[]> {

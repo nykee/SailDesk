@@ -250,5 +250,80 @@ export function fixtureGa4Report(
       { pagePath: '/', sessions: 60, users: 48, pageviews: 120 },
       { pagePath: '/tools', sessions: 30, users: 24, pageviews: 61 },
     ],
+    breakdowns: {
+      sources: [
+        {
+          label: 'google / organic',
+          sessions: 90,
+          previousSessions: 60,
+          users: 72,
+          pageviews: 150,
+          engagementRate: 0.5,
+          keyEvents: 3,
+        },
+        {
+          label: 'direct / (none)',
+          sessions: 40,
+          previousSessions: 45,
+          users: 33,
+          pageviews: 70,
+          engagementRate: 0.4,
+          keyEvents: 1,
+        },
+      ],
+      landingPages: [
+        {
+          label: '/',
+          sessions: 60,
+          previousSessions: 40,
+          users: 48,
+          pageviews: 120,
+          engagementRate: 0.5,
+          keyEvents: 2,
+        },
+      ],
+      devices: [
+        {
+          label: '移动端',
+          sessions: 80,
+          previousSessions: 55,
+          users: 66,
+          pageviews: 130,
+          engagementRate: 0.45,
+          keyEvents: 2,
+        },
+        {
+          label: '桌面端',
+          sessions: 50,
+          previousSessions: 50,
+          users: 40,
+          pageviews: 90,
+          engagementRate: 0.55,
+          keyEvents: 2,
+        },
+      ],
+      countries: [
+        {
+          label: 'United States',
+          sessions: 70,
+          previousSessions: 50,
+          users: 58,
+          pageviews: 120,
+          engagementRate: 0.5,
+          keyEvents: 3,
+        },
+      ],
+      events: [
+        {
+          label: 'page_view',
+          sessions: 130,
+          previousSessions: 105,
+          users: 106,
+          pageviews: 220,
+          engagementRate: 0.48,
+          keyEvents: 0,
+        },
+      ],
+    },
   };
 }

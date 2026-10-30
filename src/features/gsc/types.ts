@@ -27,6 +27,14 @@ export type QueryRow = SearchMetrics & {
   query: string;
 };
 
+/**
+ * Pages are the actionable unit for optimisation: a page with impressions but
+ * almost no clicks is a title/snippet problem, which no keyword row can show.
+ */
+export type PageRow = SearchMetrics & {
+  page: string;
+};
+
 /** Both views share the same complete-period performance contract. */
 export type SearchPerformance = {
   siteUrl: string;
@@ -42,6 +50,7 @@ export type SearchPerformance = {
 
 export type SearchReport = SearchPerformance & {
   queries: QueryRow[];
+  pages: PageRow[];
 };
 
 /** A failed property is explicit and can never be included as a zero in totals. */

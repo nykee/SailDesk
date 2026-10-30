@@ -1,5 +1,6 @@
 import { type DateRange, dateKeys } from '@/features/gsc/date-range';
 import type {
+  Ga4BreakdownRow,
   Ga4ChannelRow,
   Ga4Delta,
   Ga4Metrics,
@@ -123,6 +124,31 @@ export function ga4ChannelRows(
       channel: row.channel,
       sessions: row.metrics.sessions,
       previousSessions: previousByChannel.get(row.channel)?.sessions ?? 0,
+    }))
+    .sort((left, right) => right.sessions - left.sessions);
+}
+
+/**
+ * Joins the two windows on the dimension value. A value that is new this period
+ * gets `previousSessions: 0` — shown as 新增 rather than an infinite growth
+ * rate — and a value that disappeared simply does not appear in the table.
+ */
+export function ga4BreakdownRows(
+  current: Array<{ label: string; metrics: Ga4Metrics }>,
+  previous: Array<{ label: string; metrics: Ga4Metrics }>
+): Ga4BreakdownRow[] {
+  const previousByLabel = new Map(
+    previous.map((row) => [row.label, row.metrics])
+  );
+  return current
+    .map((row) => ({
+      label: row.label,
+      sessions: row.metrics.sessions,
+      previousSessions: previousByLabel.get(row.label)?.sessions ?? 0,
+      users: row.metrics.users,
+      pageviews: row.metrics.pageviews,
+      engagementRate: row.metrics.engagementRate,
+      keyEvents: row.metrics.keyEvents,
     }))
     .sort((left, right) => right.sessions - left.sessions);
 }

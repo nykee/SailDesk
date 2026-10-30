@@ -20,7 +20,7 @@ It is a **single-operator** tool: you deploy your own instance, authorize it wit
 - **Cross-source rollup** at the top of the overview: combined GSC + GA4 + Bing (+ Umami) metrics, a per-site comparison table, and prioritized action items (missing GA4 links, high-impression low-CTR sites, declining queries, low engagement, and so on).
 - **One-click export** on every site detail page — Markdown or CSV, assembled in the browser from data already on screen, so it costs no extra API calls. The Markdown file carries a "caveats" section that stops a downstream analysis model from dividing GA4 sessions by GSC clicks or reading a missing source as zero traffic.
 - **Date ranges**: last 7 / 28 / 90 days or a custom window, always compared against the immediately preceding equal-length period.
-- **Per-site detail**: GSC query and page breakdowns, GA4 channel sources and top pages, Bing top queries and pages, Umami pages, referrers and events.
+- **Per-site detail**: GSC queries and landing pages; five GA4 breakdowns (source/medium, landing page, device, country, event), each with sessions, users, engagement rate and key events; Bing top queries and pages; Umami pages, referrers and events.
 - **Honest accounting**: properties that fail to load stay visible as error rows and are never counted as zero traffic. A portfolio with any failed property never renders a misleading total.
 - **Password gate** backed by a signed, HttpOnly session cookie. One secret, no user table.
 
@@ -186,7 +186,7 @@ SailDesk 是一个自托管的 SaaS 出海站点数据工作台。它会读取�
 - **跨源汇总**：总览最上方合并 GSC + GA4 + Bing（+ Umami）指标，附每站对比表与分级改进意见（未关联 GA4、曝光高但点击率低、查询下滑、互动率偏低等）。
 - **一键导出**：每个单站详情页都能导出 Markdown 或 CSV。完全在浏览器里拼装，不发额外请求。Markdown 自带「口径与缺口」一节，避免下游分析模型把 GA4 会话除以 GSC 点击，或把缺失的数据源当成零流量。
 - **时间维度**：最近 7 / 28 / 90 天或自定义区间，始终与紧邻的等长周期对比。
-- **单站详情**：GSC 的查询词与页面明细、GA4 的渠道来源与热门页面、Bing 的热门查询与页面、Umami 的页面/来源/事件。
+- **单站详情**：GSC 的查询词与落地页明细；GA4 五个维度（来源/媒介、落地页、设备、国家/地区、事件），每行都带会话、用户、互动率与关键事件；Bing 的热门查询与页面；Umami 的页面/来源/事件。
 - **不造假数据**：读取失败的资源保留为错误行，绝不当成零流量；只要有资源失败，就不展示不完整的汇总。
 - **密码保护**：签名 HttpOnly 会话 cookie，一个密钥搞定，没有用户表。
 

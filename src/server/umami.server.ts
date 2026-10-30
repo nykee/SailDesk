@@ -330,7 +330,7 @@ export async function getUmamiReport(
   if (!website)
     throw new GscError(
       404,
-      '该站点没有匹配到 Umami 网站。可在 Umami 后台把网站域名设为该站域名（如 visualiquid.com）后自动关联。'
+      '该站点没有匹配到 Umami 网站。可在 Umami 后台把网站域名设为该站域名（如 example.com）后自动关联。'
     );
 
   const performance = await umamiPerformance(

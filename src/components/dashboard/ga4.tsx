@@ -17,6 +17,7 @@ import {
   ga4TrendOptions,
 } from '@/features/ga4/format';
 import type {
+  Ga4Breakdowns,
   Ga4OverviewReport,
   Ga4OverviewSite,
   Ga4Performance,
@@ -376,6 +377,89 @@ export function Ga4SiteSection({
   );
 }
 
+/** Each tab answers a different "where do I change something" question. */
+const breakdownOptions = [
+  { key: 'sources', label: '来源 / 媒介', hint: '哪些来源真的带来了会话' },
+  { key: 'landingPages', label: '落地页', hint: '用户从哪一页进入站点' },
+  { key: 'devices', label: '设备', hint: '移动端体验是否拖累了转化' },
+  { key: 'countries', label: '国家 / 地区', hint: '流量来自哪些市场' },
+  { key: 'events', label: '事件', hint: '站内实际发生了什么' },
+] as const;
+
+function Ga4BreakdownSection({ breakdowns }: { breakdowns: Ga4Breakdowns }) {
+  const [selected, setSelected] =
+    useState<(typeof breakdownOptions)[number]['key']>('sources');
+  const active =
+    breakdownOptions.find((option) => option.key === selected) ??
+    breakdownOptions[0];
+  const rows = breakdowns[active.key];
+  return (
+    <section className="query-section">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">BREAKDOWNS</p>
+          <h2>流量维度</h2>
+        </div>
+        <span className="query-count">{active.hint}</span>
+      </div>
+      <fieldset className="metric-switch breakdown-switch">
+        <legend className="sr-only">选择 GA4 维度</legend>
+        {breakdownOptions.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={selected === option.key ? 'is-active' : ''}
+            aria-pressed={selected === option.key}
+            onClick={() => setSelected(option.key)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </fieldset>
+      <div className="query-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{active.label}</th>
+              <th scope="col">会话</th>
+              <th scope="col">上期</th>
+              <th scope="col">变化</th>
+              <th scope="col">用户</th>
+              <th scope="col">浏览量</th>
+              <th scope="col">互动率</th>
+              <th scope="col">关键事件</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <th scope="row" className="page-path-cell">
+                  {row.label}
+                </th>
+                <td>{formatNumber(row.sessions)}</td>
+                <td>{formatNumber(row.previousSessions)}</td>
+                <td>
+                  <VolumeChange
+                    current={row.sessions}
+                    previous={row.previousSessions}
+                  />
+                </td>
+                <td>{formatNumber(row.users)}</td>
+                <td>{formatNumber(row.pageviews)}</td>
+                <td>{formatPercent(row.engagementRate)}</td>
+                <td>{formatNumber(row.keyEvents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!rows.length && (
+          <div className="table-empty">该范围内没有{active.label}数据。</div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Ga4SiteBody({ report }: { report: Ga4SiteReport }) {
   const [metric, setMetric] = useState<string>(ga4TrendOptions[0].key);
   return (
@@ -466,6 +550,7 @@ function Ga4SiteBody({ report }: { report: Ga4SiteReport }) {
           )}
         </div>
       </section>
+      <Ga4BreakdownSection breakdowns={report.breakdowns} />
       <p className="ga4-footnote">
         GA4 时间范围截至昨日（UTC），对比上一等长周期。
         <IconArrowUpRight size={13} />

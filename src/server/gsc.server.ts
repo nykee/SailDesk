@@ -152,14 +152,19 @@ export async function getReport(
       : []
   );
   validateRange(range);
-  const [performance, queries] = await Promise.all([
+  const [performance, queries, pages] = await Promise.all([
     propertyPerformance(token, siteUrl, range, requestedRange),
     searchAnalytics(token, siteUrl, range, ['query'], 'final', 25),
+    searchAnalytics(token, siteUrl, range, ['page'], 'final', 25),
   ]);
   return {
     ...performance,
     queries: (queries.rows ?? []).map((row) => ({
       query: row.keys?.[0] ?? '(未命名查询)',
+      ...metricsFromRow(row),
+    })),
+    pages: (pages.rows ?? []).map((row) => ({
+      page: row.keys?.[0] ?? '(未知页面)',
       ...metricsFromRow(row),
     })),
   };
@@ -250,7 +255,7 @@ async function searchAnalytics(
   token: string,
   siteUrl: string,
   range: DateRange,
-  dimensions: Array<'date' | 'query'>,
+  dimensions: Array<'date' | 'query' | 'page'>,
   dataState: 'final' | 'all' = 'final',
   rowLimit = 1_000
 ): Promise<GscResponse> {

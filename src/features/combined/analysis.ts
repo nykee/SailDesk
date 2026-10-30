@@ -312,7 +312,7 @@ export function buildInsights(
         severity: 'medium',
         title: `${umamiUnmatched.length} 个站点未关联 Umami`,
         detail:
-          '这些站点缺少独立的站内流量口径。请在 Umami 后台把网站域名设为该站域名（如 visualiquid.com），否则无法自动关联。',
+          '这些站点缺少独立的站内流量口径。请在 Umami 后台把网站域名设为该站域名（如 example.com），否则无法自动关联。',
         sites: umamiUnmatched,
       });
     }
