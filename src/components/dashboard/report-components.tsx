@@ -12,6 +12,7 @@ import {
   type DateRange,
   defaultDateRange,
   previousDateRange,
+  shiftDate,
 } from '@/features/gsc/date-range';
 import {
   formatMetric,
@@ -32,6 +33,27 @@ import {
   TrendChart,
 } from './line-chart';
 
+const PRESETS: { days: number; label: string; hint?: string }[] = [
+  {
+    days: 0,
+    label: '最新单日',
+    hint: '搜索数据有延迟，实际显示最近一个完整日；具体区间见下方说明',
+  },
+  { days: 1, label: '昨天' },
+  { days: 7, label: '7 天' },
+  { days: 28, label: '28 天' },
+  { days: 90, label: '90 天' },
+];
+
+/** days = 0 means today (single day, may have incomplete data). */
+function presetRange(days: number): DateRange {
+  if (days === 0) {
+    const today = shiftDate(defaultDateRange().endDate, 1);
+    return { startDate: today, endDate: today };
+  }
+  return defaultDateRange(new Date(), days);
+}
+
 /** Reused by portfolio and property views; dates and presets have one definition. */
 export function DateToolbar({
   range,
@@ -44,20 +66,21 @@ export function DateToolbar({
     <section className="toolbar" aria-label="日期范围">
       <fieldset className="preset-group" aria-label="快捷日期">
         <legend className="sr-only">快捷日期</legend>
-        {[7, 28, 90].map((days) => {
-          const preset = defaultDateRange(new Date(), days);
+        {PRESETS.map((preset) => {
+          const current = presetRange(preset.days);
           const selected =
-            range.startDate === preset.startDate &&
-            range.endDate === preset.endDate;
+            range.startDate === current.startDate &&
+            range.endDate === current.endDate;
           return (
             <button
-              key={days}
+              key={preset.label}
               type="button"
               className={selected ? 'is-selected' : ''}
               aria-pressed={selected}
-              onClick={() => onChange(preset)}
+              title={preset.hint}
+              onClick={() => onChange(current)}
             >
-              {days} 天
+              {preset.label}
             </button>
           );
         })}
@@ -82,7 +105,7 @@ export function DateToolbar({
             type="date"
             value={range.endDate}
             min={range.startDate}
-            max={defaultDateRange().endDate}
+            max={shiftDate(defaultDateRange().endDate, 1)}
             onChange={(event) =>
               onChange({ ...range, endDate: event.target.value })
             }

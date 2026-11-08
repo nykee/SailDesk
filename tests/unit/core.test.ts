@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import {
+  completedDayRange,
   defaultDateRange,
   isValidDateRange,
   previousDateRange,
+  shiftDateRange,
 } from '@/features/gsc/date-range';
 import { formatMetric } from '@/features/gsc/format';
 
@@ -25,6 +27,37 @@ describe('dashboard core contracts', () => {
     expect(
       previousDateRange({ startDate: '2026-08-03', endDate: '2026-08-30' })
     ).toEqual({ startDate: '2026-07-06', endDate: '2026-08-02' });
+  });
+
+  it('shifts a whole window without changing its inclusive length', () => {
+    expect(
+      shiftDateRange({ startDate: '2026-08-03', endDate: '2026-08-30' }, -7)
+    ).toEqual({ startDate: '2026-07-27', endDate: '2026-08-23' });
+  });
+
+  it('moves a "today" single-day range back to the last completed day', () => {
+    // The "today" preset is a single day ending one day after yesterday.
+    // Clamping only endDate would produce startDate > endDate and get rejected.
+    const yesterday = '2026-08-30';
+    const today = '2026-08-31';
+    expect(
+      completedDayRange({ startDate: today, endDate: today }, yesterday)
+    ).toEqual({ startDate: yesterday, endDate: yesterday });
+  });
+
+  it('keeps a multi-day window ending today at the same length', () => {
+    expect(
+      completedDayRange(
+        { startDate: '2026-08-25', endDate: '2026-08-31' },
+        '2026-08-30'
+      )
+    ).toEqual({ startDate: '2026-08-24', endDate: '2026-08-30' });
+    expect(
+      completedDayRange(
+        { startDate: '2026-08-03', endDate: '2026-08-30' },
+        '2026-08-30'
+      )
+    ).toEqual({ startDate: '2026-08-03', endDate: '2026-08-30' });
   });
 
   it('rejects malformed, impossible, and inverted date ranges', () => {

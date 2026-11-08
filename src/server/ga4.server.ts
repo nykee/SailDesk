@@ -26,6 +26,7 @@ import type {
   Ga4TrendPoint,
 } from '@/features/ga4/types';
 import {
+  completedDayRange,
   type DateRange,
   defaultDateRange,
   isValidDateRange,
@@ -540,19 +541,13 @@ async function mapProperties<T, R>(
 }
 
 /**
- * GA4 reports today's partial data, so the window is clamped to the last
- * completed UTC day to stay comparable with the Search Console view.
+ * GA4 reports today's partial data, so shift the whole window back to the last
+ * completed UTC day. This matches Search Console's completedDateRange and
+ * preserves the equal-length comparison period.
  */
 function validateRange(range: DateRange): DateRange {
   if (!isValidDateRange(range)) throw new GscError(400, '日期范围无效。');
-  const yesterday = defaultDateRange().endDate;
-  if (range.endDate > yesterday) {
-    const clamped = { ...range, endDate: yesterday };
-    if (clamped.startDate > clamped.endDate)
-      throw new GscError(400, '日期范围尚未开始，请选择已结束的日期。');
-    return clamped;
-  }
-  return range;
+  return completedDayRange(range, defaultDateRange().endDate);
 }
 
 function publicGoogleError(error: unknown): string {

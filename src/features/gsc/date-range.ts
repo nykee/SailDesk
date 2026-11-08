@@ -54,6 +54,32 @@ export function shiftDate(value: string, days: number): string {
   return toDateKey(date);
 }
 
+/** Moves both ends of a window by the same offset, preserving its length. */
+export function shiftDateRange(range: DateRange, days: number): DateRange {
+  return {
+    startDate: shiftDate(range.startDate, days),
+    endDate: shiftDate(range.endDate, days),
+  };
+}
+
+/**
+ * If a window reaches past the last completed UTC day (e.g. the "today"
+ * preset), shift the whole window back so it ends on that day. Clamping only
+ * endDate would invert single-day ranges and break equal-length comparisons.
+ */
+export function completedDayRange(
+  range: DateRange,
+  lastCompletedDate: string
+): DateRange {
+  if (range.endDate <= lastCompletedDate) return range;
+  const offset = Math.round(
+    (parseDateKey(range.endDate).getTime() -
+      parseDateKey(lastCompletedDate).getTime()) /
+      86_400_000
+  );
+  return shiftDateRange(range, -offset);
+}
+
 /** Enumerates the full comparison axis, including dates with no search activity. */
 export function dateKeys(range: DateRange): string[] {
   const dates: string[] = [];

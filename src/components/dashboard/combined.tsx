@@ -17,7 +17,11 @@ import {
   rankSites,
 } from '@/features/combined/analysis';
 import type { Ga4OverviewReport } from '@/features/ga4/types';
-import type { DateRange } from '@/features/gsc/date-range';
+import {
+  type DateRange,
+  defaultDateRange,
+  shiftDate,
+} from '@/features/gsc/date-range';
 import {
   formatCompact,
   formatPercent,
@@ -540,5 +544,10 @@ function rangeLabel(range: DateRange): string {
   const start = new Date(`${range.startDate}T00:00:00.000Z`).getTime();
   const end = new Date(`${range.endDate}T00:00:00.000Z`).getTime();
   const days = Math.round((end - start) / 86_400_000) + 1;
+  if (days === 1) {
+    const yesterday = defaultDateRange().endDate;
+    if (range.endDate === yesterday) return '昨天';
+    if (range.endDate === shiftDate(yesterday, 1)) return '最新单日';
+  }
   return `近 ${days} 天`;
 }
