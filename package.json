@@ -1,6 +1,6 @@
 {
   "name": "saildesk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hosted analytics desk for SaaS sites going global: Google Search Console, GA4 and Bing Webmaster in one dashboard.",
   "license": "MIT",
   "private": true,
